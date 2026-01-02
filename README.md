@@ -1,24 +1,14 @@
-# Welcome to your Lovable project
+# Welcome to frizaltech RoomRunner
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+A real-world object platformer game where you jump across your furniture!
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
+## How can I run this code?
 
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Clone this repo and push changes. The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
 Follow these steps:
 
@@ -32,7 +22,22 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Create .env file with your Supabase credentials
+# For Windows PowerShell:
+@"
+VITE_SUPABASE_URL=https://fukemjnwdbhhllcqzilw.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1a2Vtam53ZGJoaGxsY3F6aWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzY2MzUsImV4cCI6MjA4Mjk1MjYzNX0.dKTOZ1cb7LnV7LSXFYM74GHJ5x0PbRFynncSp6Yj_ss
+VITE_SUPABASE_PROJECT_ID=fukemjnwdbhhllcqzilw
+"@ | Out-File -FilePath .env -Encoding utf8
+
+# For Mac/Linux:
+cat > .env << EOF
+VITE_SUPABASE_URL=https://fukemjnwdbhhllcqzilw.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1a2Vtam53ZGJoaGxsY3F6aWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNzY2MzUsImV4cCI6MjA4Mjk1MjYzNX0.dKTOZ1cb7LnV7LSXFYM74GHJ5x0PbRFynncSp6Yj_ss
+VITE_SUPABASE_PROJECT_ID=fukemjnwdbhhllcqzilw
+EOF
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
@@ -59,15 +64,18 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (backend)
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Local Development
+Run `npm run dev` and open http://localhost:8080
 
-## Can I connect a custom domain to my Lovable project?
+### Cloud Deployment (GCP Cloud Run)
+1. Build Docker image: `docker build -t roomrunner .`
+2. Push to container registry
+3. Deploy to Cloud Run
 
-Yes, you can!
+## Author
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+frizaltech - @riskybanana
