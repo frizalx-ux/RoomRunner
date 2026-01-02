@@ -1,9 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface ControlData {
+  action: 'jump' | 'left' | 'right' | 'stop' | 'none';
+  timestamp: number;
+}
+
+interface RoomObject {
+  id: string;
+  name: string;
   x: number;
   y: number;
-  timestamp: number;
+  width: number;
+  height: number;
 }
 
 interface GameRoomState {
@@ -11,10 +19,9 @@ interface GameRoomState {
   isHost: boolean;
   isConnected: boolean;
   controlData: ControlData;
+  roomObjects: RoomObject[];
 }
 
-// Simple in-memory "server" using BroadcastChannel for same-device testing
-// In production, this would be replaced with WebSocket/Supabase Realtime
 const generateRoomCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -29,7 +36,8 @@ export const useGameRoom = () => {
     roomCode: null,
     isHost: false,
     isConnected: false,
-    controlData: { x: 0, y: 0, timestamp: Date.now() },
+    controlData: { action: 'none', timestamp: Date.now() },
+    roomObjects: [],
   });
 
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -39,13 +47,21 @@ export const useGameRoom = () => {
     const code = generateRoomCode();
     storageKeyRef.current = `game-room-${code}`;
     
-    // Store room in localStorage for cross-tab discovery
+    // Default room objects (furniture)
+    const defaultObjects: RoomObject[] = [
+      { id: '1', name: 'Floor', x: 0, y: 85, width: 100, height: 15 },
+      { id: '2', name: 'Sofa', x: 10, y: 70, width: 20, height: 15 },
+      { id: '3', name: 'Table', x: 40, y: 60, width: 15, height: 10 },
+      { id: '4', name: 'Desk', x: 65, y: 50, width: 18, height: 8 },
+      { id: '5', name: 'Shelf', x: 85, y: 35, width: 12, height: 6 },
+    ];
+    
     localStorage.setItem(storageKeyRef.current, JSON.stringify({ 
       created: Date.now(),
-      host: true 
+      host: true,
+      objects: defaultObjects,
     }));
 
-    // Create broadcast channel for real-time updates
     channelRef.current = new BroadcastChannel(`game-${code}`);
     
     channelRef.current.onmessage = (event) => {
@@ -53,11 +69,10 @@ export const useGameRoom = () => {
         setState(prev => ({
           ...prev,
           controlData: event.data.data,
-          isConnected: true,
         }));
       } else if (event.data.type === 'join') {
         setState(prev => ({ ...prev, isConnected: true }));
-        channelRef.current?.postMessage({ type: 'host-ack' });
+        channelRef.current?.postMessage({ type: 'host-ack', objects: defaultObjects });
       }
     };
 
@@ -65,6 +80,7 @@ export const useGameRoom = () => {
       ...prev,
       roomCode: code,
       isHost: true,
+      roomObjects: defaultObjects,
     }));
 
     return code;
@@ -74,7 +90,6 @@ export const useGameRoom = () => {
     const upperCode = code.toUpperCase();
     storageKeyRef.current = `game-room-${upperCode}`;
     
-    // Check if room exists
     const roomData = localStorage.getItem(storageKeyRef.current);
     if (!roomData) {
       return false;
@@ -84,11 +99,14 @@ export const useGameRoom = () => {
     
     channelRef.current.onmessage = (event) => {
       if (event.data.type === 'host-ack') {
-        setState(prev => ({ ...prev, isConnected: true }));
+        setState(prev => ({ 
+          ...prev, 
+          isConnected: true,
+          roomObjects: event.data.objects || [],
+        }));
       }
     };
 
-    // Notify host
     channelRef.current.postMessage({ type: 'join' });
 
     setState(prev => ({
@@ -101,11 +119,23 @@ export const useGameRoom = () => {
     return true;
   }, []);
 
-  const sendControl = useCallback((x: number, y: number) => {
+  const sendControl = useCallback((action: ControlData['action']) => {
     if (!channelRef.current) return;
     
-    const data: ControlData = { x, y, timestamp: Date.now() };
+    const data: ControlData = { action, timestamp: Date.now() };
     channelRef.current.postMessage({ type: 'control', data });
+  }, []);
+
+  const updateRoomObjects = useCallback((objects: RoomObject[]) => {
+    setState(prev => ({ ...prev, roomObjects: objects }));
+    if (storageKeyRef.current) {
+      const roomData = localStorage.getItem(storageKeyRef.current);
+      if (roomData) {
+        const parsed = JSON.parse(roomData);
+        parsed.objects = objects;
+        localStorage.setItem(storageKeyRef.current, JSON.stringify(parsed));
+      }
+    }
   }, []);
 
   const disconnect = useCallback(() => {
@@ -120,7 +150,8 @@ export const useGameRoom = () => {
       roomCode: null,
       isHost: false,
       isConnected: false,
-      controlData: { x: 0, y: 0, timestamp: Date.now() },
+      controlData: { action: 'none', timestamp: Date.now() },
+      roomObjects: [],
     });
   }, [state.isHost]);
 
@@ -137,6 +168,9 @@ export const useGameRoom = () => {
     createRoom,
     joinRoom,
     sendControl,
+    updateRoomObjects,
     disconnect,
   };
 };
+
+export type { RoomObject, ControlData };

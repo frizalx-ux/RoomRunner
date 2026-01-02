@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react';
 import { useGameRoom } from '@/hooks/useGameRoom';
+import { useGamePhysics } from '@/hooks/useGamePhysics';
 import { GameArena } from '@/components/game/GameArena';
 import { ConnectionQR } from '@/components/game/ConnectionQR';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Power, Monitor } from 'lucide-react';
+import { Gamepad2, Power, Monitor, RotateCcw } from 'lucide-react';
 
 const GameHost: React.FC = () => {
-  const { roomCode, isConnected, controlData, createRoom, disconnect } = useGameRoom();
+  const { roomCode, isConnected, controlData, roomObjects, createRoom, disconnect } = useGameRoom();
+  const { character, resetCharacter, CHARACTER_WIDTH, CHARACTER_HEIGHT } = useGamePhysics(roomObjects, controlData);
 
   useEffect(() => {
-    // Auto-create room on mount
     createRoom();
     
     return () => {
@@ -27,15 +28,24 @@ const GameHost: React.FC = () => {
               <Gamepad2 className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-orbitron font-bold gradient-text">GyroGame</h1>
-              <p className="text-xs text-muted-foreground">Phone Motion Controller</p>
+              <h1 className="text-xl font-orbitron font-bold gradient-text">RoomRunner</h1>
+              <p className="text-xs text-muted-foreground">Real Object Platformer</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetCharacter}
+              className="gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset
+            </Button>
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border">
               <Monitor className="w-4 h-4 text-primary" />
-              <span className="text-sm font-orbitron">Host View</span>
+              <span className="text-sm font-orbitron">Projector View</span>
             </div>
             <Button
               variant="ghost"
@@ -50,31 +60,50 @@ const GameHost: React.FC = () => {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 container mx-auto py-8 px-4">
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
-          {/* Game Arena */}
-          <div className="order-2 lg:order-1">
+      <main className="flex-1 container mx-auto py-6 px-4">
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Game Arena - takes 2 columns */}
+          <div className="lg:col-span-2">
             <GameArena
-              ballPosition={{ x: controlData.x, y: controlData.y }}
+              roomObjects={roomObjects}
+              character={character}
+              characterWidth={CHARACTER_WIDTH}
+              characterHeight={CHARACTER_HEIGHT}
               isConnected={isConnected}
             />
+            
+            {/* Control hints */}
+            <div className="mt-4 flex justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 bg-card rounded border border-border font-mono">←</span>
+                <span>Move Left</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 bg-card rounded border border-border font-mono">→</span>
+                <span>Move Right</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 bg-card rounded border border-border font-mono">↑</span>
+                <span>Jump</span>
+              </div>
+            </div>
           </div>
 
           {/* Connection Panel */}
-          <div className="order-1 lg:order-2 flex flex-col items-center">
-            <div className="bg-card/50 rounded-2xl border border-border p-8 backdrop-blur-sm">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-orbitron font-bold mb-2">
+          <div className="flex flex-col">
+            <div className="bg-card/50 rounded-2xl border border-border p-6 backdrop-blur-sm">
+              <div className="text-center mb-4">
+                <h2 className="text-xl font-orbitron font-bold mb-1">
                   {isConnected ? (
-                    <span className="text-glow">Controller Connected!</span>
+                    <span className="text-glow">Player Ready!</span>
                   ) : (
-                    'Connect Your Phone'
+                    'Connect Phone'
                   )}
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {isConnected
-                    ? 'Tilt your phone to control the ball'
-                    : 'Scan the QR code with your phone'
+                    ? 'Use buttons to control character'
+                    : 'Scan to play'
                   }
                 </p>
               </div>
@@ -85,17 +114,34 @@ const GameHost: React.FC = () => {
 
               {isConnected && (
                 <div className="flex flex-col items-center gap-4">
-                  <div className="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center animate-pulse-glow">
-                    <Gamepad2 className="w-12 h-12 text-primary" />
+                  <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center animate-pulse-glow">
+                    <Gamepad2 className="w-10 h-10 text-primary" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Control Input</p>
-                    <p className="font-mono text-primary">
-                      X: {controlData.x.toFixed(1)}° | Y: {controlData.y.toFixed(1)}°
+                    <p className="text-xs text-muted-foreground font-mono">
+                      Position: ({character.x.toFixed(0)}, {character.y.toFixed(0)})
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {character.isGrounded ? '🟢 Grounded' : '🔵 In Air'}
                     </p>
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Room objects list */}
+            <div className="mt-4 bg-card/30 rounded-xl border border-border/50 p-4">
+              <h3 className="text-sm font-orbitron text-muted-foreground mb-3">Room Objects</h3>
+              <div className="space-y-2">
+                {roomObjects.filter(o => o.name !== 'Floor').map(obj => (
+                  <div key={obj.id} className="flex items-center justify-between text-xs">
+                    <span className="text-foreground">{obj.name}</span>
+                    <span className="text-muted-foreground font-mono">
+                      ({obj.x}, {obj.y})
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -105,7 +151,7 @@ const GameHost: React.FC = () => {
       <footer className="p-4 border-t border-border/50">
         <div className="container mx-auto text-center">
           <p className="text-xs text-muted-foreground">
-            Open this page on your desktop • Use your phone as the controller
+            Project this to your wall • Jump between real furniture!
           </p>
         </div>
       </footer>
