@@ -11,10 +11,10 @@ interface CharacterState {
   isJumping: boolean;
 }
 
-const GRAVITY = 0.5;
-const JUMP_FORCE = -12;
-const MOVE_SPEED = 4;
-const FRICTION = 0.85;
+const GRAVITY = 0.3;
+const JUMP_FORCE = -8;
+const MOVE_SPEED = 2;
+const FRICTION = 0.9;
 const CHARACTER_WIDTH = 5;
 const CHARACTER_HEIGHT = 8;
 
