@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 interface ControlData {
   action: 'jump' | 'left' | 'right' | 'stop' | 'none';
@@ -20,6 +22,7 @@ interface GameRoomState {
   isConnected: boolean;
   controlData: ControlData;
   roomObjects: RoomObject[];
+  isLoading: boolean;
 }
 
 const generateRoomCode = () => {
@@ -31,6 +34,10 @@ const generateRoomCode = () => {
   return code;
 };
 
+const generateHostId = () => {
+  return `host_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
 export const useGameRoom = () => {
   const [state, setState] = useState<GameRoomState>({
     roomCode: null,
@@ -38,14 +45,17 @@ export const useGameRoom = () => {
     isConnected: false,
     controlData: { action: 'none', timestamp: Date.now() },
     roomObjects: [],
+    isLoading: false,
   });
 
-  const channelRef = useRef<BroadcastChannel | null>(null);
-  const storageKeyRef = useRef<string>('');
+  const hostIdRef = useRef<string>('');
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const createRoom = useCallback(() => {
+  const createRoom = useCallback(async () => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    
     const code = generateRoomCode();
-    storageKeyRef.current = `game-room-${code}`;
+    hostIdRef.current = generateHostId();
     
     // Default room objects (furniture)
     const defaultObjects: RoomObject[] = [
@@ -55,110 +65,183 @@ export const useGameRoom = () => {
       { id: '4', name: 'Desk', x: 65, y: 50, width: 18, height: 8 },
       { id: '5', name: 'Shelf', x: 85, y: 35, width: 12, height: 6 },
     ];
-    
-    localStorage.setItem(storageKeyRef.current, JSON.stringify({ 
-      created: Date.now(),
-      host: true,
-      objects: defaultObjects,
-    }));
 
-    channelRef.current = new BroadcastChannel(`game-${code}`);
-    
-    channelRef.current.onmessage = (event) => {
-      if (event.data.type === 'control') {
-        setState(prev => ({
-          ...prev,
-          controlData: event.data.data,
-        }));
-      } else if (event.data.type === 'join') {
-        setState(prev => ({ ...prev, isConnected: true }));
-        channelRef.current?.postMessage({ type: 'host-ack', objects: defaultObjects });
+    try {
+      // Create room in database
+      const { error } = await supabase
+        .from('game_rooms')
+        .insert({
+          room_code: code,
+          host_id: hostIdRef.current,
+          room_objects: defaultObjects as unknown as Json,
+          control_data: { action: 'none', timestamp: Date.now() } as unknown as Json,
+        });
+
+      if (error) {
+        console.error('Error creating room:', error);
+        setState(prev => ({ ...prev, isLoading: false }));
+        return null;
       }
-    };
 
-    setState(prev => ({
-      ...prev,
-      roomCode: code,
-      isHost: true,
-      roomObjects: defaultObjects,
-    }));
+      // Subscribe to realtime updates
+      channelRef.current = supabase
+        .channel(`room-${code}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'game_rooms',
+            filter: `room_code=eq.${code}`,
+          },
+          (payload) => {
+            console.log('Realtime update:', payload);
+            const newData = payload.new as any;
+            if (newData.control_data) {
+              setState(prev => ({
+                ...prev,
+                controlData: newData.control_data as ControlData,
+                isConnected: true,
+              }));
+            }
+          }
+        )
+        .subscribe();
 
-    return code;
+      setState(prev => ({
+        ...prev,
+        roomCode: code,
+        isHost: true,
+        roomObjects: defaultObjects,
+        isLoading: false,
+      }));
+
+      return code;
+    } catch (err) {
+      console.error('Error creating room:', err);
+      setState(prev => ({ ...prev, isLoading: false }));
+      return null;
+    }
   }, []);
 
-  const joinRoom = useCallback((code: string) => {
+  const joinRoom = useCallback(async (code: string) => {
+    setState(prev => ({ ...prev, isLoading: true }));
     const upperCode = code.toUpperCase();
-    storageKeyRef.current = `game-room-${upperCode}`;
-    
-    const roomData = localStorage.getItem(storageKeyRef.current);
-    if (!roomData) {
+
+    try {
+      // Check if room exists
+      const { data: room, error } = await supabase
+        .from('game_rooms')
+        .select('*')
+        .eq('room_code', upperCode)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !room) {
+        console.error('Room not found:', error);
+        setState(prev => ({ ...prev, isLoading: false }));
+        return false;
+      }
+
+      // Subscribe to realtime updates (for controller to see room state)
+      channelRef.current = supabase
+        .channel(`room-${upperCode}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'game_rooms',
+            filter: `room_code=eq.${upperCode}`,
+          },
+          (payload) => {
+            console.log('Room update received:', payload);
+          }
+        )
+        .subscribe();
+
+      setState(prev => ({
+        ...prev,
+        roomCode: upperCode,
+        isHost: false,
+        isConnected: true,
+        roomObjects: (room.room_objects as unknown as RoomObject[]) || [],
+        isLoading: false,
+      }));
+
+      return true;
+    } catch (err) {
+      console.error('Error joining room:', err);
+      setState(prev => ({ ...prev, isLoading: false }));
       return false;
     }
-
-    channelRef.current = new BroadcastChannel(`game-${upperCode}`);
-    
-    channelRef.current.onmessage = (event) => {
-      if (event.data.type === 'host-ack') {
-        setState(prev => ({ 
-          ...prev, 
-          isConnected: true,
-          roomObjects: event.data.objects || [],
-        }));
-      }
-    };
-
-    channelRef.current.postMessage({ type: 'join' });
-
-    setState(prev => ({
-      ...prev,
-      roomCode: upperCode,
-      isHost: false,
-      isConnected: true,
-    }));
-
-    return true;
   }, []);
 
-  const sendControl = useCallback((action: ControlData['action']) => {
-    if (!channelRef.current) return;
-    
+  const sendControl = useCallback(async (action: ControlData['action']) => {
+    if (!state.roomCode) return;
+
     const data: ControlData = { action, timestamp: Date.now() };
-    channelRef.current.postMessage({ type: 'control', data });
-  }, []);
+    
+    try {
+      const { error } = await supabase
+        .from('game_rooms')
+        .update({ control_data: data as unknown as Json, updated_at: new Date().toISOString() })
+        .eq('room_code', state.roomCode);
 
-  const updateRoomObjects = useCallback((objects: RoomObject[]) => {
+      if (error) {
+        console.error('Error sending control:', error);
+      }
+    } catch (err) {
+      console.error('Error sending control:', err);
+    }
+  }, [state.roomCode]);
+
+  const updateRoomObjects = useCallback(async (objects: RoomObject[]) => {
     setState(prev => ({ ...prev, roomObjects: objects }));
-    if (storageKeyRef.current) {
-      const roomData = localStorage.getItem(storageKeyRef.current);
-      if (roomData) {
-        const parsed = JSON.parse(roomData);
-        parsed.objects = objects;
-        localStorage.setItem(storageKeyRef.current, JSON.stringify(parsed));
+    
+    if (state.roomCode && state.isHost) {
+      try {
+        await supabase
+          .from('game_rooms')
+          .update({ room_objects: objects as unknown as Json, updated_at: new Date().toISOString() })
+          .eq('room_code', state.roomCode);
+      } catch (err) {
+        console.error('Error updating room objects:', err);
       }
     }
-  }, []);
+  }, [state.roomCode, state.isHost]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     if (channelRef.current) {
-      channelRef.current.close();
+      supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
-    if (state.isHost && storageKeyRef.current) {
-      localStorage.removeItem(storageKeyRef.current);
+
+    if (state.isHost && state.roomCode) {
+      try {
+        await supabase
+          .from('game_rooms')
+          .update({ is_active: false })
+          .eq('room_code', state.roomCode);
+      } catch (err) {
+        console.error('Error closing room:', err);
+      }
     }
+
     setState({
       roomCode: null,
       isHost: false,
       isConnected: false,
       controlData: { action: 'none', timestamp: Date.now() },
       roomObjects: [],
+      isLoading: false,
     });
-  }, [state.isHost]);
+  }, [state.isHost, state.roomCode]);
 
   useEffect(() => {
     return () => {
       if (channelRef.current) {
-        channelRef.current.close();
+        supabase.removeChannel(channelRef.current);
       }
     };
   }, []);

@@ -7,11 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Gamepad2, Power, Monitor, RotateCcw } from 'lucide-react';
 
 const GameHost: React.FC = () => {
-  const { roomCode, isConnected, controlData, roomObjects, createRoom, disconnect } = useGameRoom();
+  const { roomCode, isConnected, isLoading, controlData, roomObjects, createRoom, disconnect } = useGameRoom();
   const { character, resetCharacter, CHARACTER_WIDTH, CHARACTER_HEIGHT } = useGamePhysics(roomObjects, controlData);
 
   useEffect(() => {
-    createRoom();
+    const initRoom = async () => {
+      await createRoom();
+    };
+    initRoom();
     
     return () => {
       disconnect();
@@ -110,6 +113,13 @@ const GameHost: React.FC = () => {
 
               {roomCode && !isConnected && (
                 <ConnectionQR roomCode={roomCode} />
+              )}
+
+              {isLoading && !roomCode && (
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-muted-foreground">Creating room...</p>
+                </div>
               )}
 
               {isConnected && (
