@@ -11,12 +11,25 @@ interface CharacterState {
   isJumping: boolean;
 }
 
-const GRAVITY = 0.3;
-const JUMP_FORCE = -8;
-const MOVE_SPEED = 2;
-const FRICTION = 0.9;
+// ========== PHYSICS CONFIGURATION ==========
+// Adjust these values to tune movement feel
+
+// Gravity & Jump
+const GRAVITY = 0.4;           // How fast character falls (higher = faster fall)
+const JUMP_FORCE = -10;        // Jump power (more negative = higher jump)
+const MAX_FALL_SPEED = 12;     // Terminal velocity when falling
+
+// Movement
+const MAX_SPEED = 4;           // Maximum horizontal speed
+const ACCELERATION = 0.5;      // How fast character speeds up
+const DECELERATION = 0.3;      // How fast character slows down when stopping
+const AIR_CONTROL = 0.7;       // Movement control while in air (0-1, lower = less control)
+
+// Character size (percentage of screen)
 const CHARACTER_WIDTH = 5;
 const CHARACTER_HEIGHT = 8;
+
+// ============================================
 
 export const useGamePhysics = (
   roomObjects: RoomObject[],
@@ -55,22 +68,30 @@ export const useGamePhysics = (
     lastControlRef.current = action;
   }, [controlData]);
 
-  // Physics loop
+  // Physics loop - runs at 60fps
   useEffect(() => {
     const gameLoop = setInterval(() => {
       setCharacter(prev => {
         let { x, y, velocityX, velocityY, isGrounded, facingRight, isJumping } = prev;
 
-        // Apply horizontal movement
+        // Calculate acceleration based on grounded state
+        const currentAccel = isGrounded ? ACCELERATION : ACCELERATION * AIR_CONTROL;
+        const currentDecel = isGrounded ? DECELERATION : DECELERATION * AIR_CONTROL;
+
+        // Apply horizontal movement with smooth acceleration
         if (keysHeldRef.current.has('left')) {
-          velocityX = -MOVE_SPEED;
+          velocityX = Math.max(-MAX_SPEED, velocityX - currentAccel);
           facingRight = false;
         } else if (keysHeldRef.current.has('right')) {
-          velocityX = MOVE_SPEED;
+          velocityX = Math.min(MAX_SPEED, velocityX + currentAccel);
           facingRight = true;
         } else {
-          velocityX *= FRICTION;
-          if (Math.abs(velocityX) < 0.1) velocityX = 0;
+          // Smooth deceleration when no input
+          if (velocityX > 0) {
+            velocityX = Math.max(0, velocityX - currentDecel);
+          } else if (velocityX < 0) {
+            velocityX = Math.min(0, velocityX + currentDecel);
+          }
         }
 
         // Apply jump
@@ -81,8 +102,8 @@ export const useGamePhysics = (
           keysHeldRef.current.delete('jump');
         }
 
-        // Apply gravity
-        velocityY += GRAVITY;
+        // Apply gravity with terminal velocity
+        velocityY = Math.min(MAX_FALL_SPEED, velocityY + GRAVITY);
 
         // Update position
         x += velocityX;
@@ -109,8 +130,8 @@ export const useGamePhysics = (
           if (horizontalOverlap && 
               velocityY >= 0 &&
               charBottom >= objTop && 
-              charBottom <= objTop + 10 &&
-              prev.y + CHARACTER_HEIGHT <= objTop + 5) {
+              charBottom <= objTop + 12 &&
+              prev.y + CHARACTER_HEIGHT <= objTop + 8) {
             y = objTop - CHARACTER_HEIGHT;
             velocityY = 0;
             isGrounded = true;
@@ -131,7 +152,7 @@ export const useGamePhysics = (
 
         return { x, y, velocityX, velocityY, isGrounded, facingRight, isJumping };
       });
-    }, 1000 / 60);
+    }, 1000 / 60); // 60 FPS
 
     return () => clearInterval(gameLoop);
   }, [roomObjects]);
