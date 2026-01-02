@@ -1,10 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGameRoom } from '@/hooks/useGameRoom';
-import { ControllerPad } from '@/components/game/ControllerPad';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Gamepad2, ArrowLeft, Smartphone } from 'lucide-react';
+import { Gamepad2, ArrowLeft, ArrowUp, ChevronLeft, ChevronRight, Smartphone } from 'lucide-react';
 
 const Controller: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -12,6 +11,8 @@ const Controller: React.FC = () => {
   const { roomCode, isConnected, joinRoom, sendControl, disconnect } = useGameRoom();
   const [inputCode, setInputCode] = useState(searchParams.get('room') || '');
   const [error, setError] = useState('');
+  
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleJoin = useCallback(() => {
     if (inputCode.length !== 4) {
@@ -27,13 +28,28 @@ const Controller: React.FC = () => {
     }
   }, [inputCode, joinRoom]);
 
-  const handleControl = useCallback((x: number, y: number) => {
-    sendControl(x, y);
-  }, [sendControl]);
-
   const handleDisconnect = () => {
     disconnect();
     navigate('/controller');
+  };
+
+  // Control handlers with continuous movement
+  const startMove = (direction: 'left' | 'right') => {
+    sendControl(direction);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => sendControl(direction), 50);
+  };
+
+  const stopMove = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    sendControl('stop');
+  };
+
+  const handleJump = () => {
+    sendControl('jump');
   };
 
   // Auto-join if room code is in URL
@@ -47,6 +63,15 @@ const Controller: React.FC = () => {
     }
   }, [searchParams, joinRoom, roomCode]);
 
+  // Cleanup interval on unmount
+  React.useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -57,8 +82,8 @@ const Controller: React.FC = () => {
               <Smartphone className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-orbitron font-bold gradient-text">GyroGame</h1>
-              <p className="text-xs text-muted-foreground">Controller Mode</p>
+              <h1 className="text-lg font-orbitron font-bold gradient-text">RoomRunner</h1>
+              <p className="text-xs text-muted-foreground">Controller</p>
             </div>
           </div>
           
@@ -91,7 +116,7 @@ const Controller: React.FC = () => {
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-orbitron font-bold">Enter Room Code</h2>
               <p className="text-muted-foreground text-sm">
-                Enter the 4-character code shown on your desktop
+                Enter the 4-character code shown on screen
               </p>
             </div>
 
@@ -131,12 +156,63 @@ const Controller: React.FC = () => {
                 >
                   the game
                 </button>
-                {' '}on your desktop first
+                {' '}on your screen first
               </p>
             </div>
           </div>
         ) : (
-          <ControllerPad onControl={handleControl} isConnected={isConnected} />
+          <div className="w-full max-w-md space-y-8">
+            {/* Connection status */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-card rounded-full border border-primary/50 box-glow">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-sm font-orbitron text-primary">Connected</span>
+              </div>
+            </div>
+
+            {/* Jump button */}
+            <div className="flex justify-center">
+              <button
+                onTouchStart={handleJump}
+                onClick={handleJump}
+                className="w-32 h-32 rounded-full bg-gradient-to-b from-primary to-primary/70 border-4 border-primary/50 flex items-center justify-center box-glow-strong active:scale-95 transition-transform touch-none select-none"
+              >
+                <ArrowUp className="w-16 h-16 text-primary-foreground" />
+              </button>
+            </div>
+            
+            <p className="text-center text-sm text-muted-foreground font-orbitron">JUMP</p>
+
+            {/* Left/Right buttons */}
+            <div className="flex justify-center gap-8">
+              <button
+                onTouchStart={() => startMove('left')}
+                onTouchEnd={stopMove}
+                onMouseDown={() => startMove('left')}
+                onMouseUp={stopMove}
+                onMouseLeave={stopMove}
+                className="w-24 h-24 rounded-2xl bg-gradient-to-br from-secondary to-secondary/70 border-2 border-secondary/50 flex items-center justify-center box-glow-purple active:scale-95 transition-transform touch-none select-none"
+              >
+                <ChevronLeft className="w-12 h-12 text-secondary-foreground" />
+              </button>
+              
+              <button
+                onTouchStart={() => startMove('right')}
+                onTouchEnd={stopMove}
+                onMouseDown={() => startMove('right')}
+                onMouseUp={stopMove}
+                onMouseLeave={stopMove}
+                className="w-24 h-24 rounded-2xl bg-gradient-to-bl from-secondary to-secondary/70 border-2 border-secondary/50 flex items-center justify-center box-glow-purple active:scale-95 transition-transform touch-none select-none"
+              >
+                <ChevronRight className="w-12 h-12 text-secondary-foreground" />
+              </button>
+            </div>
+            
+            <div className="flex justify-center gap-8 text-sm text-muted-foreground font-orbitron">
+              <span className="w-24 text-center">LEFT</span>
+              <span className="w-24 text-center">RIGHT</span>
+            </div>
+          </div>
         )}
       </main>
 
@@ -144,7 +220,7 @@ const Controller: React.FC = () => {
       <footer className="p-4 border-t border-border/50">
         <div className="text-center">
           <p className="text-xs text-muted-foreground">
-            Hold your phone flat • Tilt to control
+            Tap & hold direction buttons • Tap jump to leap
           </p>
         </div>
       </footer>

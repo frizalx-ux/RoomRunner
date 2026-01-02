@@ -1,85 +1,120 @@
 import React from 'react';
+import type { RoomObject } from '@/hooks/useGameRoom';
 
 interface GameArenaProps {
-  ballPosition: { x: number; y: number };
+  roomObjects: RoomObject[];
+  character: {
+    x: number;
+    y: number;
+    facingRight: boolean;
+    isJumping: boolean;
+    isGrounded: boolean;
+  };
+  characterWidth: number;
+  characterHeight: number;
   isConnected: boolean;
 }
 
-export const GameArena: React.FC<GameArenaProps> = ({ ballPosition, isConnected }) => {
-  // Map control values (-45 to 45 degrees) to position (0% to 100%)
-  const normalizePosition = (value: number, isGamma: boolean = false) => {
-    const maxAngle = isGamma ? 45 : 45;
-    const clamped = Math.max(-maxAngle, Math.min(maxAngle, value));
-    return ((clamped + maxAngle) / (maxAngle * 2)) * 100;
-  };
-
-  const xPos = normalizePosition(ballPosition.x, true);
-  const yPos = normalizePosition(ballPosition.y, false);
-
+export const GameArena: React.FC<GameArenaProps> = ({ 
+  roomObjects, 
+  character, 
+  characterWidth, 
+  characterHeight,
+  isConnected 
+}) => {
   return (
-    <div className="relative w-full max-w-2xl aspect-square mx-auto">
-      {/* Outer glow ring */}
-      <div className="absolute inset-0 rounded-2xl border-2 border-primary/30 box-glow animate-pulse-glow" />
+    <div className="relative w-full aspect-video mx-auto bg-gradient-to-b from-card/80 to-background rounded-2xl overflow-hidden border-2 border-primary/30 box-glow">
+      {/* Grid overlay */}
+      <div className="absolute inset-0 grid-pattern opacity-20" />
       
-      {/* Grid background */}
-      <div className="absolute inset-2 rounded-xl bg-card/50 grid-pattern overflow-hidden">
-        {/* Scanline effect */}
-        <div className="absolute inset-0 scanline pointer-events-none" />
-        
-        {/* Center crosshair */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          <div className="absolute w-px h-full bg-gradient-to-b from-transparent via-primary/30 to-transparent" />
-        </div>
+      {/* Scanline effect */}
+      <div className="absolute inset-0 scanline pointer-events-none opacity-30" />
 
-        {/* Corner decorations */}
-        {[
-          'top-4 left-4',
-          'top-4 right-4 rotate-90',
-          'bottom-4 right-4 rotate-180',
-          'bottom-4 left-4 -rotate-90',
-        ].map((position, i) => (
-          <div
-            key={i}
-            className={`absolute ${position} w-8 h-8 border-l-2 border-t-2 border-primary/50`}
-          />
-        ))}
-
-        {/* The controllable ball */}
+      {/* Room objects / Platforms */}
+      {roomObjects.map((obj) => (
         <div
-          className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 transition-all duration-75 ease-out"
+          key={obj.id}
+          className="absolute transition-all duration-200"
           style={{
-            left: `${xPos}%`,
-            top: `${yPos}%`,
+            left: `${obj.x}%`,
+            top: `${obj.y}%`,
+            width: `${obj.width}%`,
+            height: `${obj.height}%`,
           }}
         >
-          {/* Ball core */}
+          {/* Platform visual */}
           <div className={`
-            w-full h-full rounded-full 
-            ${isConnected 
-              ? 'bg-gradient-to-br from-primary via-neon-cyan to-neon-purple box-glow-strong' 
-              : 'bg-muted-foreground/50'
+            w-full h-full rounded-lg border-2 
+            ${obj.name === 'Floor' 
+              ? 'bg-gradient-to-t from-primary/40 to-primary/20 border-primary/50' 
+              : 'bg-gradient-to-t from-secondary/40 to-secondary/20 border-secondary/50 box-glow-purple'
             }
-            transition-all duration-300
           `}>
-            {/* Inner glow */}
-            <div className="absolute inset-1 rounded-full bg-gradient-to-br from-white/30 to-transparent" />
+            {/* Platform label */}
+            {obj.name !== 'Floor' && (
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-orbitron text-muted-foreground whitespace-nowrap">
+                {obj.name}
+              </div>
+            )}
+            {/* Surface highlight */}
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
           </div>
-          
-          {/* Orbit ring when connected */}
-          {isConnected && (
-            <div className="absolute inset-[-8px] rounded-full border border-primary/30 animate-glow-ring" />
-          )}
         </div>
+      ))}
 
-        {/* Status indicator */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-primary animate-pulse' : 'bg-muted-foreground'}`} />
-          <span className="text-xs text-muted-foreground font-orbitron tracking-wider uppercase">
-            {isConnected ? 'Controller Active' : 'Waiting for Controller'}
-          </span>
+      {/* Character */}
+      <div
+        className="absolute transition-all duration-75 ease-out"
+        style={{
+          left: `${character.x}%`,
+          top: `${character.y}%`,
+          width: `${characterWidth}%`,
+          height: `${characterHeight}%`,
+          transform: `scaleX(${character.facingRight ? 1 : -1})`,
+        }}
+      >
+        {/* Character body */}
+        <div className={`
+          w-full h-full rounded-lg 
+          ${isConnected 
+            ? 'bg-gradient-to-b from-primary via-neon-cyan to-primary box-glow-strong' 
+            : 'bg-muted-foreground/50'
+          }
+          ${character.isJumping ? 'animate-pulse' : ''}
+          transition-colors duration-300
+        `}>
+          {/* Face */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-3/4 h-1/4 flex justify-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+            <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+          </div>
+          {/* Body shine */}
+          <div className="absolute inset-1 rounded-md bg-gradient-to-br from-white/30 to-transparent" />
         </div>
+        
+        {/* Jump trail effect */}
+        {character.isJumping && (
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-primary/50 rounded-full blur-sm animate-ping" />
+        )}
       </div>
+
+      {/* Status overlay */}
+      <div className="absolute top-4 left-4 flex items-center gap-2 bg-card/80 px-3 py-1.5 rounded-full border border-border">
+        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-primary animate-pulse' : 'bg-muted-foreground'}`} />
+        <span className="text-xs font-orbitron text-muted-foreground uppercase tracking-wider">
+          {isConnected ? 'Controller Connected' : 'Waiting for Player'}
+        </span>
+      </div>
+
+      {/* Instructions overlay when not connected */}
+      {!isConnected && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+          <div className="text-center space-y-2">
+            <p className="text-2xl font-orbitron text-glow">Scan QR Code</p>
+            <p className="text-muted-foreground">to start playing</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
