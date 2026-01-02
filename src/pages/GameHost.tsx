@@ -1,14 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGameRoom } from '@/hooks/useGameRoom';
 import { useGamePhysics } from '@/hooks/useGamePhysics';
 import { GameArena } from '@/components/game/GameArena';
 import { ConnectionQR } from '@/components/game/ConnectionQR';
+import { RoomEditor } from '@/components/game/RoomEditor';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Power, Monitor, RotateCcw } from 'lucide-react';
+import { Gamepad2, Power, Monitor, RotateCcw, Settings2 } from 'lucide-react';
+import type { RoomObject } from '@/hooks/useGameRoom';
 
 const GameHost: React.FC = () => {
-  const { roomCode, isConnected, isLoading, controlData, roomObjects, createRoom, disconnect } = useGameRoom();
+  const { roomCode, isConnected, isLoading, controlData, roomObjects, createRoom, disconnect, updateRoomObjects } = useGameRoom();
   const { character, resetCharacter, CHARACTER_WIDTH, CHARACTER_HEIGHT } = useGamePhysics(roomObjects, controlData);
+  const [showEditor, setShowEditor] = useState(false);
 
   useEffect(() => {
     const initRoom = async () => {
@@ -20,6 +23,20 @@ const GameHost: React.FC = () => {
       disconnect();
     };
   }, []);
+
+  const handleSaveRoom = async (objects: RoomObject[]) => {
+    await updateRoomObjects(objects);
+  };
+
+  if (showEditor) {
+    return (
+      <RoomEditor
+        roomObjects={roomObjects}
+        onSave={handleSaveRoom}
+        onClose={() => setShowEditor(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -37,6 +54,15 @@ const GameHost: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEditor(true)}
+              className="gap-2"
+            >
+              <Settings2 className="w-4 h-4" />
+              Edit Room
+            </Button>
             <Button
               variant="outline"
               size="sm"
