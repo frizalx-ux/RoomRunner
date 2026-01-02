@@ -8,23 +8,27 @@ import { Gamepad2, ArrowLeft, ArrowUp, ChevronLeft, ChevronRight, Smartphone } f
 const Controller: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { roomCode, isConnected, joinRoom, sendControl, disconnect } = useGameRoom();
+  const { roomCode, isConnected, isLoading, joinRoom, sendControl, disconnect } = useGameRoom();
   const [inputCode, setInputCode] = useState(searchParams.get('room') || '');
   const [error, setError] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleJoin = useCallback(() => {
+  const handleJoin = useCallback(async () => {
     if (inputCode.length !== 4) {
       setError('Please enter a 4-character room code');
       return;
     }
     
-    const success = joinRoom(inputCode);
+    setIsJoining(true);
+    setError('');
+    
+    const success = await joinRoom(inputCode);
+    setIsJoining(false);
+    
     if (!success) {
       setError('Room not found. Make sure the game is running on your desktop.');
-    } else {
-      setError('');
     }
   }, [inputCode, joinRoom]);
 
@@ -55,13 +59,19 @@ const Controller: React.FC = () => {
   // Auto-join if room code is in URL
   React.useEffect(() => {
     const roomFromUrl = searchParams.get('room');
-    if (roomFromUrl && roomFromUrl.length === 4 && !roomCode) {
+    if (roomFromUrl && roomFromUrl.length === 4 && !roomCode && !isJoining) {
       setInputCode(roomFromUrl);
-      setTimeout(() => {
-        joinRoom(roomFromUrl);
-      }, 500);
+      const autoJoin = async () => {
+        setIsJoining(true);
+        const success = await joinRoom(roomFromUrl);
+        setIsJoining(false);
+        if (!success) {
+          setError('Room not found. Make sure the game is running on your desktop.');
+        }
+      };
+      autoJoin();
     }
-  }, [searchParams, joinRoom, roomCode]);
+  }, [searchParams, joinRoom, roomCode, isJoining]);
 
   // Cleanup interval on unmount
   React.useEffect(() => {
@@ -140,9 +150,9 @@ const Controller: React.FC = () => {
               <Button
                 onClick={handleJoin}
                 className="w-full h-12 font-orbitron"
-                disabled={inputCode.length !== 4}
+                disabled={inputCode.length !== 4 || isJoining}
               >
-                Connect
+                {isJoining ? 'Connecting...' : 'Connect'}
               </Button>
             </div>
 
