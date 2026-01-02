@@ -38,10 +38,11 @@ const Controller: React.FC = () => {
   };
 
   // Control handlers with continuous movement
+  // Using 100ms interval to reduce database spam while maintaining responsiveness
   const startMove = (direction: 'left' | 'right') => {
     sendControl(direction);
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => sendControl(direction), 50);
+    intervalRef.current = setInterval(() => sendControl(direction), 100);
   };
 
   const stopMove = () => {
