@@ -12,11 +12,13 @@ interface CharacterState {
 }
 
 const GRAVITY = 0.3;
-const JUMP_FORCE = -8;
-const MOVE_SPEED = 2;
-const FRICTION = 0.9;
+const JUMP_FORCE = -7; // slightly shorter jump
+const MOVE_SPEED = 1.6; // slower base speed
+const FRICTION = 0.88;
 const CHARACTER_WIDTH = 5;
 const CHARACTER_HEIGHT = 8;
+
+const AIR_CONTROL = 0.65;
 
 export const useGamePhysics = (
   roomObjects: RoomObject[],
@@ -61,12 +63,13 @@ export const useGamePhysics = (
       setCharacter(prev => {
         let { x, y, velocityX, velocityY, isGrounded, facingRight, isJumping } = prev;
 
-        // Apply horizontal movement
+        // Apply horizontal movement (reduced control while airborne)
+        const speedFactor = isGrounded ? 1 : AIR_CONTROL;
         if (keysHeldRef.current.has('left')) {
-          velocityX = -MOVE_SPEED;
+          velocityX = -MOVE_SPEED * speedFactor;
           facingRight = false;
         } else if (keysHeldRef.current.has('right')) {
-          velocityX = MOVE_SPEED;
+          velocityX = MOVE_SPEED * speedFactor;
           facingRight = true;
         } else {
           velocityX *= FRICTION;
@@ -78,6 +81,8 @@ export const useGamePhysics = (
           velocityY = JUMP_FORCE;
           isGrounded = false;
           isJumping = true;
+          // reduce carry distance on takeoff
+          velocityX *= 0.85;
           keysHeldRef.current.delete('jump');
         }
 

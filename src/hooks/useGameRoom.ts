@@ -87,6 +87,21 @@ export const useGameRoom = () => {
       channelRef.current = supabase
         .channel(`room-${code}`)
         .on(
+          'broadcast',
+          { event: 'control' },
+          (payload) => {
+            console.log('Broadcast control:', payload);
+            const control = (payload as any).payload as ControlData | undefined;
+            if (control?.action) {
+              setState(prev => ({
+                ...prev,
+                controlData: control,
+                isConnected: true,
+              }));
+            }
+          }
+        )
+        .on(
           'postgres_changes',
           {
             event: 'UPDATE',
@@ -95,13 +110,13 @@ export const useGameRoom = () => {
             filter: `room_code=eq.${code}`,
           },
           (payload) => {
+            // Keep DB subscription for room object edits, etc.
             console.log('Realtime update:', payload);
             const newData = payload.new as any;
-            if (newData.control_data) {
+            if (newData.room_objects) {
               setState(prev => ({
                 ...prev,
-                controlData: newData.control_data as ControlData,
-                isConnected: true,
+                roomObjects: (newData.room_objects as unknown as RoomObject[]) || prev.roomObjects,
               }));
             }
           }
@@ -143,9 +158,12 @@ export const useGameRoom = () => {
         return false;
       }
 
-      // Subscribe to realtime updates (for controller to see room state)
+      // Subscribe to realtime updates (controller)
       channelRef.current = supabase
         .channel(`room-${upperCode}`)
+        .on('broadcast', { event: 'control' }, (payload) => {
+          console.log('Control broadcast received (controller):', payload);
+        })
         .on(
           'postgres_changes',
           {
@@ -181,7 +199,23 @@ export const useGameRoom = () => {
     if (!state.roomCode) return;
 
     const data: ControlData = { action, timestamp: Date.now() };
-    
+
+    // Low-latency path: realtime broadcast (no DB write)
+    try {
+      if (channelRef.current) {
+        console.log('Broadcasting control:', data);
+        await channelRef.current.send({
+          type: 'broadcast',
+          event: 'control',
+          payload: data,
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('Broadcast failed, falling back to DB update:', err);
+    }
+
+    // Fallback: DB update
     try {
       const { error } = await supabase
         .from('game_rooms')
