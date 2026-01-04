@@ -166,6 +166,34 @@
   }
 }
 
+/* Yoshi walking animations */
+@keyframes walk {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(8deg);
+  }
+}
+
+@keyframes walkAlt {
+  0%, 100% {
+    transform: translateY(-3px) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

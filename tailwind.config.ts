@@ -84,12 +84,27 @@ export default {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
         },
+        "walk": {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "50%": { transform: "translateY(-3px) rotate(8deg)" },
+        },
+        "walkAlt": {
+          "0%, 100%": { transform: "translateY(-3px) rotate(-8deg)" },
+          "50%": { transform: "translateY(0) rotate(0deg)" },
+        },
+        "wiggle": {
+          "0%, 100%": { transform: "rotate(-5deg)" },
+          "50%": { transform: "rotate(5deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-neon": "pulse-neon 2s ease-in-out infinite",
         "glow-ring": "glow-ring 4s linear infinite",
+        "walk": "walk 0.25s ease-in-out infinite",
+        "walkAlt": "walkAlt 0.25s ease-in-out infinite",
+        "wiggle": "wiggle 0.3s ease-in-out infinite",
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
