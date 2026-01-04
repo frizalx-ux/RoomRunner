@@ -62,9 +62,9 @@ export const GameArena: React.FC<GameArenaProps> = ({
         </div>
       ))}
 
-      {/* Character - Mario in Suit */}
+      {/* Character - Cute Yoshi */}
       <div
-        className="absolute transition-all duration-75 ease-out"
+        className="absolute transition-all duration-75 ease-out pointer-events-none"
         style={{
           left: `${character.x}%`,
           top: `${character.y}%`,
@@ -73,78 +73,71 @@ export const GameArena: React.FC<GameArenaProps> = ({
           transform: `scaleX(${character.facingRight ? 1 : -1})`,
         }}
       >
-        <div className={`
-          relative w-full h-full
-          ${character.isJumping ? 'animate-bounce' : ''}
-          transition-all duration-150
-        `}>
-          {/* Hat - Red cap */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] h-[18%] bg-red-600 rounded-t-full border-b-2 border-red-800">
-            {/* Cap brim */}
-            <div className="absolute -bottom-[3px] left-1/2 -translate-x-1/2 w-[110%] h-[40%] bg-red-600 rounded-full" />
-            {/* M logo */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full flex items-center justify-center">
-              <span className="text-[4px] font-bold text-red-600">M</span>
-            </div>
-          </div>
-
-          {/* Face */}
-          <div className="absolute top-[16%] left-1/2 -translate-x-1/2 w-[75%] h-[28%] bg-[#FFDAB9] rounded-lg border border-[#DEB887]">
-            {/* Eyes */}
-            <div className="absolute top-[25%] left-[20%] w-[18%] h-[30%] bg-white rounded-full border border-gray-300">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-blue-600 rounded-full" />
-            </div>
-            <div className="absolute top-[25%] right-[20%] w-[18%] h-[30%] bg-white rounded-full border border-gray-300">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-blue-600 rounded-full" />
-            </div>
-            {/* Mustache */}
-            <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-[80%] h-[25%] bg-[#3D2314] rounded-full" />
-            {/* Nose */}
-            <div className="absolute top-[50%] left-1/2 -translate-x-1/2 w-[25%] h-[25%] bg-[#FFDAB9] rounded-full border border-[#DEB887] z-10" />
-          </div>
-
-          {/* Suit Body */}
-          <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[90%] h-[38%] bg-gray-800 rounded-lg border border-gray-900">
-            {/* Tie */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[20%] h-[90%] bg-red-500 rounded-b-sm">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] h-[20%] bg-red-500 rounded-sm" />
-            </div>
-            {/* Suit lapels */}
-            <div className="absolute top-0 left-[10%] w-[25%] h-[50%] bg-gray-700 rounded-br-lg origin-top-left -skew-x-6" />
-            <div className="absolute top-0 right-[10%] w-[25%] h-[50%] bg-gray-700 rounded-bl-lg origin-top-right skew-x-6" />
-            {/* White shirt collar */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-[15%] bg-white rounded-b-sm" />
-            {/* Buttons */}
-            <div className="absolute top-[55%] left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-400 rounded-full" />
-            <div className="absolute top-[75%] left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-400 rounded-full" />
-          </div>
-
-          {/* Legs/Pants */}
-          <div className="absolute bottom-[8%] left-[15%] w-[30%] h-[22%] bg-gray-700 rounded-b-md" />
-          <div className="absolute bottom-[8%] right-[15%] w-[30%] h-[22%] bg-gray-700 rounded-b-md" />
-
-          {/* Shoes */}
-          <div className="absolute bottom-0 left-[10%] w-[35%] h-[12%] bg-[#3D2314] rounded-lg" />
-          <div className="absolute bottom-0 right-[10%] w-[35%] h-[12%] bg-[#3D2314] rounded-lg" />
-
-          {/* Glowing effect when connected */}
-          {isConnected && (
-            <div className="absolute inset-0 rounded-lg bg-primary/10 animate-pulse pointer-events-none" />
-          )}
-        </div>
+        {/* Main Yoshi body - no background box */}
+        <svg
+          viewBox="0 0 40 50"
+          className={`w-full h-full drop-shadow-lg ${character.isJumping ? 'animate-pulse' : ''}`}
+          style={{ filter: isConnected ? 'drop-shadow(0 0 8px rgba(34, 197, 94, 0.6))' : 'none' }}
+        >
+          {/* Body - round green belly */}
+          <ellipse cx="20" cy="32" rx="12" ry="10" fill="#4ADE80" />
+          <ellipse cx="20" cy="32" rx="10" ry="8" fill="#22C55E" />
+          {/* White belly patch */}
+          <ellipse cx="20" cy="34" rx="7" ry="5" fill="#F0FDF4" />
+          
+          {/* Head - round cute shape */}
+          <ellipse cx="20" cy="16" rx="11" ry="10" fill="#4ADE80" />
+          <ellipse cx="20" cy="16" rx="9" ry="8" fill="#22C55E" />
+          
+          {/* Big cute eyes */}
+          <ellipse cx="15" cy="13" rx="5" ry="6" fill="white" />
+          <ellipse cx="25" cy="13" rx="5" ry="6" fill="white" />
+          {/* Pupils */}
+          <circle cx="16" cy="14" r="2.5" fill="#1F2937" />
+          <circle cx="26" cy="14" r="2.5" fill="#1F2937" />
+          {/* Eye shine */}
+          <circle cx="17" cy="12" r="1" fill="white" />
+          <circle cx="27" cy="12" r="1" fill="white" />
+          
+          {/* Cute snout/nose */}
+          <ellipse cx="20" cy="20" rx="6" ry="4" fill="#4ADE80" />
+          <ellipse cx="20" cy="20" rx="5" ry="3" fill="#22C55E" />
+          {/* Nostrils */}
+          <circle cx="18" cy="19" r="1" fill="#166534" />
+          <circle cx="22" cy="19" r="1" fill="#166534" />
+          
+          {/* Cute smile */}
+          <path d="M 16 22 Q 20 25 24 22" stroke="#166534" strokeWidth="1" fill="none" strokeLinecap="round" />
+          
+          {/* Red shell/saddle */}
+          <ellipse cx="20" cy="30" rx="8" ry="4" fill="#EF4444" />
+          <ellipse cx="20" cy="29" rx="6" ry="2.5" fill="#DC2626" />
+          {/* Shell shine */}
+          <ellipse cx="18" cy="28" rx="2" ry="1" fill="#FCA5A5" opacity="0.6" />
+          
+          {/* Cute little arms */}
+          <ellipse cx="8" cy="30" rx="3" ry="4" fill="#4ADE80" />
+          <ellipse cx="32" cy="30" rx="3" ry="4" fill="#4ADE80" />
+          
+          {/* Feet - orange boots */}
+          <ellipse cx="13" cy="44" rx="5" ry="3" fill="#FB923C" />
+          <ellipse cx="27" cy="44" rx="5" ry="3" fill="#FB923C" />
+          {/* Boot tops */}
+          <rect x="9" y="40" width="8" height="4" rx="2" fill="#F97316" />
+          <rect x="23" y="40" width="8" height="4" rx="2" fill="#F97316" />
+          
+          {/* Rosy cheeks */}
+          <circle cx="10" cy="18" r="2" fill="#FDA4AF" opacity="0.5" />
+          <circle cx="30" cy="18" r="2" fill="#FDA4AF" opacity="0.5" />
+        </svg>
         
-        {/* Jump trail effect */}
+        {/* Jump sparkles */}
         {character.isJumping && (
           <>
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-yellow-400/60 rounded-full blur-sm animate-ping" />
-            <div className="absolute -bottom-2 left-1/4 w-2 h-2 bg-yellow-300/40 rounded-full blur-sm" />
-            <div className="absolute -bottom-2 right-1/4 w-2 h-2 bg-yellow-300/40 rounded-full blur-sm" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-green-400/70 rounded-full blur-[2px] animate-ping" />
+            <div className="absolute -bottom-2 left-1/3 w-1.5 h-1.5 bg-yellow-300/50 rounded-full blur-[1px]" />
+            <div className="absolute -bottom-2 right-1/3 w-1.5 h-1.5 bg-yellow-300/50 rounded-full blur-[1px]" />
           </>
-        )}
-
-        {/* Grounded dust particles */}
-        {character.isGrounded && !character.isJumping && (
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-1 bg-muted/30 rounded-full blur-sm" />
         )}
       </div>
 
