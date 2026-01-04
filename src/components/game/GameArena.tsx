@@ -62,7 +62,7 @@ export const GameArena: React.FC<GameArenaProps> = ({
         </div>
       ))}
 
-      {/* Character */}
+      {/* Character - Mario in Suit */}
       <div
         className="absolute transition-all duration-75 ease-out"
         style={{
@@ -73,28 +73,78 @@ export const GameArena: React.FC<GameArenaProps> = ({
           transform: `scaleX(${character.facingRight ? 1 : -1})`,
         }}
       >
-        {/* Character body */}
         <div className={`
-          w-full h-full rounded-lg 
-          ${isConnected 
-            ? 'bg-gradient-to-b from-primary via-neon-cyan to-primary box-glow-strong' 
-            : 'bg-muted-foreground/50'
-          }
-          ${character.isJumping ? 'animate-pulse' : ''}
-          transition-colors duration-300
+          relative w-full h-full
+          ${character.isJumping ? 'animate-bounce' : ''}
+          transition-all duration-150
         `}>
-          {/* Face */}
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-3/4 h-1/4 flex justify-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
-            <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+          {/* Hat - Red cap */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[85%] h-[18%] bg-red-600 rounded-t-full border-b-2 border-red-800">
+            {/* Cap brim */}
+            <div className="absolute -bottom-[3px] left-1/2 -translate-x-1/2 w-[110%] h-[40%] bg-red-600 rounded-full" />
+            {/* M logo */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full flex items-center justify-center">
+              <span className="text-[4px] font-bold text-red-600">M</span>
+            </div>
           </div>
-          {/* Body shine */}
-          <div className="absolute inset-1 rounded-md bg-gradient-to-br from-white/30 to-transparent" />
+
+          {/* Face */}
+          <div className="absolute top-[16%] left-1/2 -translate-x-1/2 w-[75%] h-[28%] bg-[#FFDAB9] rounded-lg border border-[#DEB887]">
+            {/* Eyes */}
+            <div className="absolute top-[25%] left-[20%] w-[18%] h-[30%] bg-white rounded-full border border-gray-300">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-blue-600 rounded-full" />
+            </div>
+            <div className="absolute top-[25%] right-[20%] w-[18%] h-[30%] bg-white rounded-full border border-gray-300">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-blue-600 rounded-full" />
+            </div>
+            {/* Mustache */}
+            <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-[80%] h-[25%] bg-[#3D2314] rounded-full" />
+            {/* Nose */}
+            <div className="absolute top-[50%] left-1/2 -translate-x-1/2 w-[25%] h-[25%] bg-[#FFDAB9] rounded-full border border-[#DEB887] z-10" />
+          </div>
+
+          {/* Suit Body */}
+          <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[90%] h-[38%] bg-gray-800 rounded-lg border border-gray-900">
+            {/* Tie */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[20%] h-[90%] bg-red-500 rounded-b-sm">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] h-[20%] bg-red-500 rounded-sm" />
+            </div>
+            {/* Suit lapels */}
+            <div className="absolute top-0 left-[10%] w-[25%] h-[50%] bg-gray-700 rounded-br-lg origin-top-left -skew-x-6" />
+            <div className="absolute top-0 right-[10%] w-[25%] h-[50%] bg-gray-700 rounded-bl-lg origin-top-right skew-x-6" />
+            {/* White shirt collar */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[40%] h-[15%] bg-white rounded-b-sm" />
+            {/* Buttons */}
+            <div className="absolute top-[55%] left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-400 rounded-full" />
+            <div className="absolute top-[75%] left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-400 rounded-full" />
+          </div>
+
+          {/* Legs/Pants */}
+          <div className="absolute bottom-[8%] left-[15%] w-[30%] h-[22%] bg-gray-700 rounded-b-md" />
+          <div className="absolute bottom-[8%] right-[15%] w-[30%] h-[22%] bg-gray-700 rounded-b-md" />
+
+          {/* Shoes */}
+          <div className="absolute bottom-0 left-[10%] w-[35%] h-[12%] bg-[#3D2314] rounded-lg" />
+          <div className="absolute bottom-0 right-[10%] w-[35%] h-[12%] bg-[#3D2314] rounded-lg" />
+
+          {/* Glowing effect when connected */}
+          {isConnected && (
+            <div className="absolute inset-0 rounded-lg bg-primary/10 animate-pulse pointer-events-none" />
+          )}
         </div>
         
         {/* Jump trail effect */}
         {character.isJumping && (
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-primary/50 rounded-full blur-sm animate-ping" />
+          <>
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-yellow-400/60 rounded-full blur-sm animate-ping" />
+            <div className="absolute -bottom-2 left-1/4 w-2 h-2 bg-yellow-300/40 rounded-full blur-sm" />
+            <div className="absolute -bottom-2 right-1/4 w-2 h-2 bg-yellow-300/40 rounded-full blur-sm" />
+          </>
+        )}
+
+        {/* Grounded dust particles */}
+        {character.isGrounded && !character.isJumping && (
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-1 bg-muted/30 rounded-full blur-sm" />
         )}
       </div>
 
