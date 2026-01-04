@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGameRoom } from '@/hooks/useGameRoom';
 import { Button } from '@/components/ui/button';
@@ -13,20 +13,20 @@ const Controller: React.FC = () => {
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  
 
   const handleJoin = useCallback(async () => {
     if (inputCode.length !== 4) {
       setError('Please enter a 4-character room code');
       return;
     }
-    
+
     setIsJoining(true);
     setError('');
-    
+
     const success = await joinRoom(inputCode);
     setIsJoining(false);
-    
+
     if (!success) {
       setError('Room not found. Make sure the game is running on your desktop.');
     }
@@ -37,18 +37,12 @@ const Controller: React.FC = () => {
     navigate('/controller');
   };
 
-  // Control handlers with continuous movement
+  // Control handlers (send once; host keeps state until 'stop')
   const startMove = (direction: 'left' | 'right') => {
     sendControl(direction);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => sendControl(direction), 50);
   };
 
   const stopMove = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
     sendControl('stop');
   };
 
@@ -73,14 +67,6 @@ const Controller: React.FC = () => {
     }
   }, [searchParams, joinRoom, roomCode, isJoining]);
 
-  // Cleanup interval on unmount
-  React.useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
