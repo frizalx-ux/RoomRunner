@@ -1,17 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useGameRoom } from '@/hooks/useGameRoom';
 import { useGamePhysics } from '@/hooks/useGamePhysics';
 import { GameArena } from '@/components/game/GameArena';
 import { ConnectionQR } from '@/components/game/ConnectionQR';
 import { RoomEditor } from '@/components/game/RoomEditor';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Power, Monitor, RotateCcw, Settings2 } from 'lucide-react';
+import { Gamepad2, Power, Monitor, RotateCcw, Settings2, Maximize, Minimize } from 'lucide-react';
 import type { RoomObject } from '@/hooks/useGameRoom';
 
 const GameHost: React.FC = () => {
   const { roomCode, isConnected, isLoading, controlData, roomObjects, createRoom, disconnect, updateRoomObjects } = useGameRoom();
   const { character, resetCharacter, CHARACTER_WIDTH, CHARACTER_HEIGHT } = useGamePhysics(roomObjects, controlData);
   const [showEditor, setShowEditor] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const gameContainerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = async () => {
+    if (!gameContainerRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      await gameContainerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     const initRoom = async () => {
@@ -93,13 +115,23 @@ const GameHost: React.FC = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Game Arena - takes 2 columns */}
           <div className="lg:col-span-2">
-            <GameArena
-              roomObjects={roomObjects}
-              character={character}
-              characterWidth={CHARACTER_WIDTH}
-              characterHeight={CHARACTER_HEIGHT}
-              isConnected={isConnected}
-            />
+            <div ref={gameContainerRef} className={`relative ${isFullscreen ? 'flex items-center justify-center bg-background' : ''}`}>
+              <GameArena
+                roomObjects={roomObjects}
+                character={character}
+                characterWidth={CHARACTER_WIDTH}
+                characterHeight={CHARACTER_HEIGHT}
+                isConnected={isConnected}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleFullscreen}
+                className="absolute top-2 right-2 z-10 bg-card/80 backdrop-blur-sm"
+              >
+                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+              </Button>
+            </div>
             
             {/* Control hints */}
             <div className="mt-4 flex justify-center gap-8 text-sm text-muted-foreground">
